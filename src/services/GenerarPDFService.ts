@@ -3,6 +3,7 @@ import sharp from "sharp"; // npm install sharp
 import { IActa } from '@/models/Acta';
 
 import { readFile } from 'fs/promises';
+import path from 'path';
 
 export async function generarPDF(acta: IActa): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
@@ -30,23 +31,35 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let footerImg: any = null;
 
+  // Helper para obtener rutas absolutas a la carpeta public en entornos de Vercel/Next
+  const publicFile = (fileName: string) => path.join(process.cwd(), 'public', fileName);
+
   // Dibuja encabezado (solo en la página inicial)
   const drawHeader = async (page: PDFPage) => {
-    // Cargar imagen de fondo del header (una sola vez)
+    // Cargar imagen de fondo del header (una sola vez). Si falta, continuar sin imagen.
     if (!headerImg) {
-      const imageBuffer = await readFile('public/fondo_header.jpg');
-      headerImg = await pdfDoc.embedJpg(imageBuffer);
+      try {
+        const imageBuffer = await readFile(publicFile('fondo_header.jpg'));
+        headerImg = await pdfDoc.embedJpg(imageBuffer);
+      } catch (err: unknown) {
+        // No bloquear la generación si la imagen no existe en el entorno (Vercel u otros)
+        // eslint-disable-next-line no-console
+        console.warn('No se encontró fondo_header.jpg en /public — se omitirá el header image.', err);
+        headerImg = null;
+      }
     }
 
-    // Dibuja la imagen de fondo en la parte superior
-    const imgWidth = page.getWidth();
-    const imgHeight = headerHeight;
-    page.drawImage(headerImg, {
-      x: 0,
-      y: page.getHeight() - imgHeight,
-      width: imgWidth,
-      height: imgHeight,
-    });
+    // Dibuja la imagen de fondo en la parte superior solo si se cargó
+    if (headerImg) {
+      const imgWidth = page.getWidth();
+      const imgHeight = headerHeight;
+      page.drawImage(headerImg, {
+        x: 0,
+        y: page.getHeight() - imgHeight,
+        width: imgWidth,
+        height: imgHeight,
+      });
+    }
 
     // Extrae líneas del encabezado
     const lines = acta.encabezado.split('\n');
@@ -108,18 +121,27 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   // Dibuja pie de página con número
   const drawFooter = async (page: PDFPage, pageIndex: number, totalPages: number) => {
     if (!footerImg) {
-      const imageBuffer = await readFile('public/fondo_footer.jpg');
-      footerImg = await pdfDoc.embedJpg(imageBuffer);
+      try {
+        const imageBuffer = await readFile(publicFile('fondo_footer.jpg'));
+        footerImg = await pdfDoc.embedJpg(imageBuffer);
+      } catch (err: unknown) {
+        // eslint-disable-next-line no-console
+        console.warn('No se encontró fondo_footer.jpg en /public — se omitirá el footer image.', err);
+        footerImg = null;
+      }
     }
 
-    const imgWidth = page.getWidth();
-    const imgHeight = footerHeight; // altura del footer
-    page.drawImage(footerImg, {
-      x: 0,
-      y: 0, // parte inferior de la página
-      width: imgWidth,
-      height: imgHeight,
-    });
+    // Dibujar imagen de footer solo si se cargó
+    if (footerImg) {
+      const imgWidth = page.getWidth();
+      const imgHeight = footerHeight; // altura del footer
+      page.drawImage(footerImg, {
+        x: 0,
+        y: 0, // parte inferior de la página
+        width: imgWidth,
+        height: imgHeight,
+      });
+    }
 
     const footerText = acta.piePagina;
     const pageNumberText = `Página ${pageIndex + 1} de ${totalPages}`;
