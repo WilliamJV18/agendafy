@@ -3,7 +3,6 @@ import sharp from "sharp"; // npm install sharp
 import { IActa } from '@/models/Acta';
 
 import { readFile } from 'fs/promises';
-import path from 'path';
 
 export async function generarPDF(acta: IActa): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
@@ -35,8 +34,7 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   const drawHeader = async (page: PDFPage) => {
     // Cargar imagen de fondo del header (una sola vez)
     if (!headerImg) {
-      const imagePath = path.join(process.cwd(), 'public', 'assets', 'fondo_header.jpg');
-      const imageBuffer = await readFile(imagePath);
+      const imageBuffer = await readFile('public/fondo_header.jpg');
       headerImg = await pdfDoc.embedJpg(imageBuffer);
     }
 
@@ -110,8 +108,7 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   // Dibuja pie de página con número
   const drawFooter = async (page: PDFPage, pageIndex: number, totalPages: number) => {
     if (!footerImg) {
-      const imagePath = path.join(process.cwd(), 'public', 'assets', 'fondo_footer.jpg');
-      const imageBuffer = await readFile(imagePath);
+      const imageBuffer = await readFile('public/fondo_footer.jpg');
       footerImg = await pdfDoc.embedJpg(imageBuffer);
     }
 
