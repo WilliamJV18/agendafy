@@ -35,21 +35,9 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   const drawHeader = async (page: PDFPage) => {
     // Cargar imagen de fondo del header (una sola vez)
     if (!headerImg) {
-      // Intentar cargar desde public (recomendado para despliegues como Vercel)
-      const publicPath = path.join(process.cwd(), 'public', 'assets', 'fondo_header.jpg');
-      const fallbackPath = path.join(process.cwd(), 'src', 'assets', 'fondo_header.jpg');
-      let imageBuffer: Buffer | null = null;
-      try {
-        imageBuffer = await readFile(publicPath);
-      } catch (err) {
-        // Si no existe en public, intentar la ruta original en src (útil en desarrollo local)
-        try {
-          imageBuffer = await readFile(fallbackPath);
-        } catch (err2) {
-          throw err2; // propaga el error para que el caller lo vea
-        }
-      }
-      headerImg = await pdfDoc.embedJpg(imageBuffer as Buffer);
+      const imagePath = path.join(process.cwd(), 'public', 'assets', 'fondo_header.jpg');
+      const imageBuffer = await readFile(imagePath);
+      headerImg = await pdfDoc.embedJpg(imageBuffer);
     }
 
     // Dibuja la imagen de fondo en la parte superior
@@ -122,20 +110,9 @@ export async function generarPDF(acta: IActa): Promise<Buffer> {
   // Dibuja pie de página con número
   const drawFooter = async (page: PDFPage, pageIndex: number, totalPages: number) => {
     if (!footerImg) {
-      // Intentar cargar desde public (recomendado para despliegues como Vercel)
-      const publicPath = path.join(process.cwd(), 'public', 'assets', 'fondo_footer.jpg');
-      const fallbackPath = path.join(process.cwd(), 'src', 'assets', 'fondo_footer.jpg');
-      let imageBuffer: Buffer | null = null;
-      try {
-        imageBuffer = await readFile(publicPath);
-      } catch (err) {
-        try {
-          imageBuffer = await readFile(fallbackPath);
-        } catch (err2) {
-          throw err2;
-        }
-      }
-      footerImg = await pdfDoc.embedJpg(imageBuffer as Buffer);
+      const imagePath = path.join(process.cwd(), 'public', 'assets', 'fondo_footer.jpg');
+      const imageBuffer = await readFile(imagePath);
+      footerImg = await pdfDoc.embedJpg(imageBuffer);
     }
 
     const imgWidth = page.getWidth();
